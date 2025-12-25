@@ -626,3 +626,25 @@ if (document.readyState === 'loading') {
 window.handleLogin = handleLogin;
 window.logout = logout;
 window.testAPIConnection = testAPIConnection;
+
+// Di akhir file auth.js, TAMBAHKAN:
+// ================================================
+// GLOBAL FUNCTION EXPORTS
+// ================================================
+
+// Pastikan semua function penting tersedia secara global
+window.YouziAuth = {
+    login: login,
+    logout: logout,
+    handleLogin: handleLogin,
+    testAPIConnection: testAPIConnection,
+    switchToDashboard: switchToDashboard,
+    switchToLogin: switchToLogin
+};
+
+// Alias untuk backward compatibility
+window.login = login;
+window.logout = logout;
+window.handleLogin = handleLogin;
+
+console.log('✅ Auth module loaded and functions exported to window');
