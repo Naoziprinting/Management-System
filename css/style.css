@@ -742,3 +742,79 @@ body {
         padding: 1rem;
     }
 }
+
+/* Test user buttons */
+.test-buttons {
+    margin-top: 20px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+}
+
+.btn-test-user {
+    display: inline-block;
+    margin: 5px;
+    padding: 8px 15px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.btn-test-user:hover {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+/* Debug console styles */
+#debug-console {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1a1a1a;
+    color: #00ff00;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    padding: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10000;
+    display: none;
+    border-top: 1px solid #333;
+    line-height: 1.4;
+}
+
+#debug-console div {
+    margin: 2px 0;
+    padding: 2px 0;
+    border-bottom: 1px solid #333;
+}
+
+#debug-toggle {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    z-index: 10001;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    transition: var(--transition);
+}
+
+#debug-toggle:hover {
+    background: #2980b9;
+    transform: scale(1.1);
+}
