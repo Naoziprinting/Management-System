@@ -7,10 +7,43 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Debug styles */
+        #debug-console {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10000;
+            display: none;
+            border-top: 1px solid #333;
+        }
+        #debug-toggle {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            z-index: 10001;
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
     <div id="app">
-        <!-- Login Screen (Default) -->
+        <!-- Login Screen -->
         <div id="login-screen" class="screen active">
             <div class="login-container">
                 <div class="logo-section">
@@ -27,14 +60,14 @@
                         <label for="email">
                             <i class="fas fa-envelope"></i> Email
                         </label>
-                        <input type="email" id="email" placeholder="admin@youzicorp.com" autocomplete="off">
+                        <input type="email" id="email" placeholder="admin@youzicorp.com" autocomplete="off" value="admin@youzicorp.com">
                     </div>
                     
                     <div class="form-group">
                         <label for="password">
                             <i class="fas fa-lock"></i> Password
                         </label>
-                        <input type="password" id="password" placeholder="••••••••" autocomplete="off">
+                        <input type="password" id="password" placeholder="••••••••" autocomplete="off" value="Admin123!">
                     </div>
                     
                     <div class="form-options">
@@ -49,10 +82,17 @@
                         <i class="fas fa-sign-in-alt"></i> Masuk
                     </button>
                     
-                    <div class="demo-credentials">
-                        <p><strong>Demo Login:</strong></p>
-                        <p>Admin: admin@youzicorp.com / Admin123!</p>
-                        <p>Sales: sales@youzicorp.com / Sales123!</p>
+                    <div class="test-buttons" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                        <p style="margin-bottom: 10px; font-size: 0.9em; color: #666;">Test Users:</p>
+                        <button type="button" class="btn-test-user" data-email="admin@youzicorp.com" data-password="Admin123!">
+                            <i class="fas fa-user-shield"></i> Admin
+                        </button>
+                        <button type="button" class="btn-test-user" data-email="sales@youzicorp.com" data-password="Sales123!">
+                            <i class="fas fa-shopping-cart"></i> Sales
+                        </button>
+                        <button type="button" class="btn-test-user" data-email="gudang@youzicorp.com" data-password="Gudang123!">
+                            <i class="fas fa-warehouse"></i> Gudang
+                        </button>
                     </div>
                 </div>
                 
@@ -63,7 +103,7 @@
             </div>
         </div>
         
-        <!-- Main Dashboard (Hidden by default) -->
+        <!-- Dashboard Screen -->
         <div id="dashboard-screen" class="screen">
             <div class="dashboard-container">
                 <!-- Sidebar -->
@@ -130,7 +170,6 @@
                 
                 <!-- Main Content -->
                 <main class="main-content">
-                    <!-- Top Bar -->
                     <header class="top-bar">
                         <div class="breadcrumb">
                             <span id="page-title">Dashboard</span>
@@ -159,16 +198,13 @@
                         </div>
                     </header>
                     
-                    <!-- Page Content -->
                     <div class="page-content">
-                        <!-- Dashboard Page -->
                         <div class="page active" id="page-dashboard">
                             <div class="page-header">
                                 <h2>Dashboard Overview</h2>
                                 <p>Ringkasan performa inventory dan penjualan</p>
                             </div>
                             
-                            <!-- Stats Cards -->
                             <div class="stats-grid">
                                 <div class="stat-card">
                                     <div class="stat-icon" style="background: #3498db;">
@@ -211,7 +247,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Recent Activity -->
                             <div class="dashboard-section">
                                 <h3>Aktivitas Terbaru</h3>
                                 <div class="activity-list" id="recent-activity">
@@ -228,36 +263,125 @@
                             </div>
                         </div>
                         
-                        <!-- Other pages will be loaded here -->
                         <div class="page" id="page-products">
-                            <!-- Products page content will be loaded dynamically -->
-                        </div>
-                        
-                        <div class="page" id="page-inventory">
-                            <!-- Inventory page content -->
+                            <!-- Products page -->
                         </div>
                     </div>
                 </main>
             </div>
         </div>
-        
-        <!-- QR Scanner Modal -->
-        <div class="modal" id="qr-scanner-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Scan QR Code</h3>
-                    <button class="modal-close">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div id="qr-reader" style="width: 100%;"></div>
-                    <div id="qr-result"></div>
-                </div>
-            </div>
-        </div>
     </div>
     
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Debug Console -->
+    <div id="debug-console"></div>
+    <button id="debug-toggle" title="Toggle Debug Console">
+        <i class="fas fa-bug"></i>
+    </button>
+    
     <script src="js/auth.js"></script>
-    <script src="js/main.js"></script>
+    <script>
+        // Debug utility functions
+        function debugLog(message, type = 'info') {
+            const consoleEl = document.getElementById('debug-console');
+            if (!consoleEl) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const color = {
+                'info': '#3498db',
+                'success': '#2ecc71',
+                'error': '#e74c3c',
+                'warning': '#f39c12'
+            }[type] || '#3498db';
+            
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `
+                <span style="color: #999;">[${timestamp}]</span>
+                <span style="color: ${color};">${message}</span>
+            `;
+            
+            consoleEl.appendChild(logEntry);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+            
+            // Also log to browser console
+            console[type === 'error' ? 'error' : 'log'](`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        // Toggle debug console
+        document.getElementById('debug-toggle').addEventListener('click', function() {
+            const consoleEl = document.getElementById('debug-console');
+            consoleEl.style.display = consoleEl.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        // Manual login test
+        window.testLogin = async function() {
+            debugLog('Manual login test started...', 'info');
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            debugLog(`Attempting login with: ${email}`, 'info');
+            
+            try {
+                const result = await login(email, password);
+                debugLog(`Login result: ${JSON.stringify(result)}`, 
+                         result.success ? 'success' : 'error');
+            } catch (error) {
+                debugLog(`Login error: ${error.message}`, 'error');
+            }
+        };
+        
+        // Test API connection
+        window.testAPI = async function() {
+            debugLog('Testing API connection...', 'info');
+            
+            try {
+                const response = await fetch(
+                    'https://script.google.com/macros/s/AKfycbwOXpLlyyHLrLk-RxuldWdZYSghJkk71m9kDIEmG7jvcnpviQ--n1J_GLgphLiw-MhM/exec?action=test'
+                );
+                const data = await response.json();
+                debugLog(`API Response: ${JSON.stringify(data)}`, 'success');
+            } catch (error) {
+                debugLog(`API Error: ${error.message}`, 'error');
+            }
+        };
+        
+        // Initialize debug on load
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('DOM loaded successfully', 'success');
+            debugLog('Testing elements...', 'info');
+            
+            // Test if elements exist
+            const elements = ['login-btn', 'email', 'password', 'login-screen', 'dashboard-screen'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                debugLog(`${id}: ${el ? 'FOUND' : 'NOT FOUND'}`, 
+                         el ? 'success' : 'error');
+            });
+            
+            // Add click listener for debug
+            const loginBtn = document.getElementById('login-btn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function(e) {
+                    debugLog('Login button CLICKED!', 'success');
+                    console.log('Login button event:', e);
+                });
+            }
+            
+            // Add test user buttons
+            document.querySelectorAll('.btn-test-user').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const email = this.dataset.email;
+                    const password = this.dataset.password;
+                    
+                    document.getElementById('email').value = email;
+                    document.getElementById('password').value = password;
+                    
+                    debugLog(`Auto-filled: ${email}`, 'info');
+                });
+            });
+            
+            debugLog('Initialization complete', 'success');
+        });
+    </script>
 </body>
 </html>
