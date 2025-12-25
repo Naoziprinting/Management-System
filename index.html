@@ -1,1 +1,263 @@
-
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Youzi Corp - Inventory System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen (Default) -->
+        <div id="login-screen" class="screen active">
+            <div class="login-container">
+                <div class="logo-section">
+                    <div class="logo">
+                        <i class="fas fa-boxes-stacked"></i>
+                        <span>YOUZI CORP</span>
+                    </div>
+                    <h1>Sistem Inventory</h1>
+                    <p class="subtitle">Manajemen produk terintegrasi dengan QR Code</p>
+                </div>
+                
+                <div class="login-form">
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> Email
+                        </label>
+                        <input type="email" id="email" placeholder="admin@youzicorp.com" autocomplete="off">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" id="password" placeholder="••••••••" autocomplete="off">
+                    </div>
+                    
+                    <div class="form-options">
+                        <label class="checkbox">
+                            <input type="checkbox" id="remember">
+                            <span>Ingat saya</span>
+                        </label>
+                        <a href="#" class="forgot-password">Lupa password?</a>
+                    </div>
+                    
+                    <button id="login-btn" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Masuk
+                    </button>
+                    
+                    <div class="demo-credentials">
+                        <p><strong>Demo Login:</strong></p>
+                        <p>Admin: admin@youzicorp.com / Admin123!</p>
+                        <p>Sales: sales@youzicorp.com / Sales123!</p>
+                    </div>
+                </div>
+                
+                <div class="login-footer">
+                    <p>© 2024 Youzi Corp. All rights reserved.</p>
+                    <p class="version">v1.0.0</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Dashboard (Hidden by default) -->
+        <div id="dashboard-screen" class="screen">
+            <div class="dashboard-container">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <div class="sidebar-header">
+                        <div class="logo">
+                            <i class="fas fa-boxes-stacked"></i>
+                            <span>YOUZI</span>
+                        </div>
+                        <button class="sidebar-toggle" id="sidebar-toggle">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="user-info">
+                        <div class="avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-details">
+                            <h4 id="user-name">Loading...</h4>
+                            <span class="user-role" id="user-role">Loading...</span>
+                        </div>
+                    </div>
+                    
+                    <nav class="sidebar-nav">
+                        <ul>
+                            <li class="nav-item active" data-page="dashboard">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Dashboard</span>
+                            </li>
+                            <li class="nav-item" data-page="products">
+                                <i class="fas fa-box"></i>
+                                <span>Produk</span>
+                            </li>
+                            <li class="nav-item" data-page="inventory">
+                                <i class="fas fa-warehouse"></i>
+                                <span>Inventory</span>
+                            </li>
+                            <li class="nav-item" data-page="sales">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>Penjualan</span>
+                            </li>
+                            <li class="nav-item" data-page="reports">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Laporan</span>
+                            </li>
+                            <li class="nav-item" data-page="users">
+                                <i class="fas fa-users"></i>
+                                <span>Users</span>
+                            </li>
+                            <li class="nav-item" data-page="settings">
+                                <i class="fas fa-cog"></i>
+                                <span>Settings</span>
+                            </li>
+                        </ul>
+                    </nav>
+                    
+                    <div class="sidebar-footer">
+                        <button id="logout-btn" class="btn btn-logout">
+                            <i class="fas fa-sign-out-alt"></i> Keluar
+                        </button>
+                    </div>
+                </aside>
+                
+                <!-- Main Content -->
+                <main class="main-content">
+                    <!-- Top Bar -->
+                    <header class="top-bar">
+                        <div class="breadcrumb">
+                            <span id="page-title">Dashboard</span>
+                        </div>
+                        
+                        <div class="top-bar-actions">
+                            <button class="btn-notification" id="notification-btn">
+                                <i class="fas fa-bell"></i>
+                                <span class="notification-badge" id="notification-count">0</span>
+                            </button>
+                            
+                            <div class="dark-mode-toggle">
+                                <input type="checkbox" id="dark-mode-switch">
+                                <label for="dark-mode-switch">
+                                    <i class="fas fa-moon"></i>
+                                    <i class="fas fa-sun"></i>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="quick-actions">
+                                <button class="btn-quick" id="quick-scan">
+                                    <i class="fas fa-qrcode"></i> Scan QR
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+                    
+                    <!-- Page Content -->
+                    <div class="page-content">
+                        <!-- Dashboard Page -->
+                        <div class="page active" id="page-dashboard">
+                            <div class="page-header">
+                                <h2>Dashboard Overview</h2>
+                                <p>Ringkasan performa inventory dan penjualan</p>
+                            </div>
+                            
+                            <!-- Stats Cards -->
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-icon" style="background: #3498db;">
+                                        <i class="fas fa-boxes"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <h3 id="total-products">0</h3>
+                                        <p>Total Produk</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card">
+                                    <div class="stat-icon" style="background: #2ecc71;">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <h3 id="total-sales">0</h3>
+                                        <p>Penjualan Hari Ini</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card">
+                                    <div class="stat-icon" style="background: #e74c3c;">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <h3 id="low-stock">0</h3>
+                                        <p>Stock Rendah</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="stat-card">
+                                    <div class="stat-icon" style="background: #f39c12;">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <h3 id="expiring-soon">0</h3>
+                                        <p>Mendekati Expired</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Recent Activity -->
+                            <div class="dashboard-section">
+                                <h3>Aktivitas Terbaru</h3>
+                                <div class="activity-list" id="recent-activity">
+                                    <div class="activity-item">
+                                        <div class="activity-icon">
+                                            <i class="fas fa-info-circle"></i>
+                                        </div>
+                                        <div class="activity-content">
+                                            <p>Memuat aktivitas...</p>
+                                            <span class="activity-time">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Other pages will be loaded here -->
+                        <div class="page" id="page-products">
+                            <!-- Products page content will be loaded dynamically -->
+                        </div>
+                        
+                        <div class="page" id="page-inventory">
+                            <!-- Inventory page content -->
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+        
+        <!-- QR Scanner Modal -->
+        <div class="modal" id="qr-scanner-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Scan QR Code</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="qr-reader" style="width: 100%;"></div>
+                    <div id="qr-result"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
