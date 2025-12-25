@@ -382,3 +382,45 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('lastVisit', today);
     }
 });
+
+// Di akhir file main.js, tambahkan:
+function loadPageContent(pageName) {
+    console.log('Loading page:', pageName);
+    
+    switch(pageName) {
+        case 'dashboard':
+            loadDashboardContent();
+            break;
+        case 'products':
+            if (typeof loadProductsPage === 'function') {
+                loadProductsPage();
+            } else {
+                console.error('Products module not loaded');
+                showNotification('Products module sedang dimuat...', 'info');
+                // Load products.js dynamically if needed
+                loadScript('js/products.js');
+            }
+            break;
+        case 'inventory':
+            showNotification('Inventory module akan segera tersedia', 'info');
+            break;
+        case 'sales':
+            showNotification('Sales module akan segera tersedia', 'info');
+            break;
+        case 'reports':
+            showNotification('Reports module akan segera tersedia', 'info');
+            break;
+        default:
+            console.log('Page not implemented:', pageName);
+    }
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
