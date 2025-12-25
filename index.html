@@ -383,5 +383,76 @@
             debugLog('Initialization complete', 'success');
         });
     </script>
+    <!-- Di bagian akhir index.html, SEBELUM </body> -->
+<script>
+    // Debug utility tetap di sini...
+    function debugLog(message, type = 'info') {
+        // ... kode debugLog tetap ...
+    }
+
+    // Toggle debug console
+    document.getElementById('debug-toggle')?.addEventListener('click', function() {
+        const consoleEl = document.getElementById('debug-console');
+        consoleEl.style.display = consoleEl.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Simple login handler untuk testing
+    async function handleLoginButton() {
+        debugLog('Login button clicked - Direct handler', 'info');
+        
+        const email = document.getElementById('email')?.value || '';
+        const password = document.getElementById('password')?.value || '';
+        
+        debugLog(`Login attempt: ${email}`, 'info');
+        
+        // Cek apakah auth.js sudah loaded
+        if (typeof window.login === 'function') {
+            debugLog('Calling window.login()...', 'info');
+            await window.login(email, password);
+        } else if (typeof window.handleLogin === 'function') {
+            debugLog('Calling window.handleLogin()...', 'info');
+            await window.handleLogin();
+        } else {
+            debugLog('ERROR: No login function found!', 'error');
+            alert('Login system belum siap. Refresh halaman.');
+        }
+    }
+
+    // Test user buttons
+    document.querySelectorAll('.btn-test-user').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const email = this.dataset.email;
+            const password = this.dataset.password;
+            
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+            
+            debugLog(`Auto-filled: ${email}`, 'info');
+        });
+    });
+
+    // Initialize debug on load
+    document.addEventListener('DOMContentLoaded', function() {
+        debugLog('DOM loaded successfully', 'success');
+        debugLog('Testing elements...', 'info');
+        
+        // Test if elements exist
+        const elements = ['login-btn', 'email', 'password', 'login-screen', 'dashboard-screen'];
+        elements.forEach(id => {
+            const el = document.getElementById(id);
+            debugLog(`${id}: ${el ? 'FOUND' : 'NOT FOUND'}`, 
+                     el ? 'success' : 'error');
+        });
+        
+        // Add click listener for login button
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', handleLoginButton);
+            debugLog('Login button event listener ADDED', 'success');
+        }
+        
+        debugLog('Initialization complete', 'success');
+    });
+</script>
 </body>
 </html>
