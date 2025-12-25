@@ -1,7 +1,10 @@
-// File: js/auth.js - SIMPLIFIED WORKING VERSION
-console.log('🚀 auth.js loaded!');
+// File: js/auth.js - FIXED VERSION
+console.log('🚀 auth.js loaded successfully!');
 
-// Configuration
+// ================================================
+// CONFIGURATION
+// ================================================
+
 const API_URL = "https://script.google.com/macros/s/AKfycbwOXpLlyyHLrLk-RxuldWdZYSghJkk71m9kDIEmG7jvcnpviQ--n1J_GLgphLiw-MhM/exec";
 
 // Global state
@@ -9,326 +12,470 @@ let currentUser = null;
 let authToken = localStorage.getItem('youzi_token');
 
 // ================================================
-// SIMPLE API FUNCTION
+// API FUNCTIONS - FIXED
 // ================================================
 
 async function apiRequest(action, data = {}) {
     console.log(`📡 API Request: ${action}`, data);
     
     try {
-        // Use GET for all requests to avoid CORS issues
-        const params = new URLSearchParams();
-        params.append('action', action);
+        // Build URL with parameters
+        const url = new URL(API_URL);
+        url.searchParams.append('action', action);
         
+        // Add all data parameters
         Object.keys(data).forEach(key => {
-            params.append(key, data[key]);
+            if (data[key] !== null && data[key] !== undefined) {
+                url.searchParams.append(key, data[key].toString());
+            }
         });
         
-        const url = `${API_URL}?${params.toString()}`;
-        console.log('Request URL:', url);
+        console.log('Final URL:', url.toString());
         
-        const response = await fetch(url, {
+        // Make GET request
+        const response = await fetch(url.toString(), {
             method: 'GET',
             mode: 'cors',
-            cache: 'no-cache'
+            cache: 'no-cache',
+            headers: {
+                'Accept': 'application/json'
+            }
         });
         
-        const text = await response.text();
-        console.log('Raw response:', text);
+        console.log('Response status:', response.status, response.statusText);
         
-        try {
-            return JSON.parse(text);
-        } catch (error) {
-            console.error('JSON parse error:', error);
-            return {
-                success: false,
-                error: 'Invalid JSON response',
-                raw: text
-            };
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
+        const result = await response.json();
+        console.log('API Response:', result);
+        return result;
+        
     } catch (error) {
-        console.error('API Request failed:', error);
+        console.error('❌ API Request failed:', error);
         return {
             success: false,
-            error: 'Network error: ' + error.message
+            error: error.message || 'Network error'
         };
     }
 }
 
 // ================================================
-// SIMPLE LOGIN FUNCTION
+// AUTHENTICATION FUNCTIONS - FIXED
 // ================================================
 
 async function login(email, password) {
-    console.log('🔐 Login attempt:', email);
+    console.log('🔐 Login attempt for:', email);
     
     // Show loading
     showLoading('Memproses login...');
     
     try {
-        const result = await apiRequest('login', { email, password });
-        console.log('Login result:', result);
+        const result = await apiRequest('login', { 
+            email: email.trim(), 
+            password: password 
+        });
         
-        if (result && result.success) {
-            // Save data
+        console.log('Login API response:', result);
+        
+        if (result && result.success === true) {
+            // Save authentication data
             authToken = result.token;
             currentUser = result.user;
             
             localStorage.setItem('youzi_token', authToken);
             localStorage.setItem('youzi_user', JSON.stringify(currentUser));
             
+            console.log('✅ Login successful! User:', currentUser);
+            
             // Switch to dashboard
             switchToDashboard();
             
-            // Show success
-            showNotification(`Selamat datang, ${currentUser.full_name}!`, 'success');
+            // Show success notification
+            showNotification(
+                `Selamat datang, ${currentUser.full_name}!`, 
+                'success'
+            );
             
             return { success: true };
+            
         } else {
-            const errorMsg = result?.error || 'Login gagal';
+            const errorMsg = result?.error || 'Login gagal. Periksa email dan password.';
+            console.error('❌ Login failed:', errorMsg);
             showNotification(errorMsg, 'error');
-            return { success: false, error: errorMsg };
+            
+            return {
+                success: false,
+                error: errorMsg
+            };
         }
         
     } catch (error) {
-        console.error('Login error:', error);
-        showNotification('Terjadi kesalahan', 'error');
-        return { success: false, error: error.message };
+        console.error('❌ Login error:', error);
+        showNotification('Terjadi kesalahan saat login', 'error');
+        
+        return {
+            success: false,
+            error: error.message
+        };
+        
     } finally {
         hideLoading();
     }
 }
 
+function logout() {
+    if (confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
+        console.log('👋 Logging out user:', currentUser?.email);
+        
+        // Clear storage
+        localStorage.removeItem('youzi_token');
+        localStorage.removeItem('youzi_user');
+        
+        // Clear state
+        authToken = null;
+        currentUser = null;
+        
+        // Reload page
+        window.location.reload();
+    }
+}
+
 // ================================================
-// UI FUNCTIONS
+// UI FUNCTIONS - FIXED
 // ================================================
 
 function switchToLogin() {
-    console.log('Switching to login screen');
+    console.log('🔄 Switching to login screen');
+    
     const loginScreen = document.getElementById('login-screen');
     const dashboardScreen = document.getElementById('dashboard-screen');
     
-    if (loginScreen) loginScreen.classList.add('active');
-    if (dashboardScreen) dashboardScreen.classList.remove('active');
+    if (loginScreen) {
+        loginScreen.classList.add('active');
+    }
+    
+    if (dashboardScreen) {
+        dashboardScreen.classList.remove('active');
+    }
 }
 
 function switchToDashboard() {
-    console.log('Switching to dashboard');
+    console.log('🔄 Switching to dashboard');
+    
     const loginScreen = document.getElementById('login-screen');
     const dashboardScreen = document.getElementById('dashboard-screen');
     
-    if (loginScreen) loginScreen.classList.remove('active');
-    if (dashboardScreen) dashboardScreen.classList.add('active');
+    if (loginScreen) {
+        loginScreen.classList.remove('active');
+    }
+    
+    if (dashboardScreen) {
+        dashboardScreen.classList.add('active');
+    }
     
     // Update user info
     updateUserInfo();
 }
 
 function updateUserInfo() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.warn('No current user to update');
+        return;
+    }
     
     const userNameEl = document.getElementById('user-name');
     const userRoleEl = document.getElementById('user-role');
     
-    if (userNameEl) userNameEl.textContent = currentUser.full_name;
-    if (userRoleEl) userRoleEl.textContent = currentUser.role.toUpperCase();
+    if (userNameEl) {
+        userNameEl.textContent = currentUser.full_name;
+    }
+    
+    if (userRoleEl) {
+        const roleNames = {
+            'admin': 'Administrator',
+            'manager': 'Manager',
+            'gudang': 'Staff Gudang',
+            'sales': 'Sales',
+            'keuangan': 'Staff Keuangan'
+        };
+        
+        userRoleEl.textContent = roleNames[currentUser.role] || currentUser.role;
+    }
 }
 
 function showLoading(message) {
-    console.log('Loading:', message);
-    // Simple loading indicator
-    const existing = document.getElementById('simple-loading');
-    if (existing) existing.remove();
+    console.log('⏳ Loading:', message);
     
-    const loading = document.createElement('div');
-    loading.id = 'simple-loading';
-    loading.innerHTML = `
-        <div style="
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            color: white;
-            font-size: 18px;
-            flex-direction: column;
-        ">
-            <div class="spinner" style="
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #3498db;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                animation: spin 1s linear infinite;
-                margin-bottom: 15px;
-            "></div>
-            <div>${message}</div>
-        </div>
+    // Remove existing loading
+    hideLoading();
+    
+    // Create loading overlay
+    const loadingEl = document.createElement('div');
+    loadingEl.id = 'loading-overlay';
+    loadingEl.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        color: white;
+        font-family: 'Inter', sans-serif;
+        font-size: 18px;
     `;
     
-    document.body.appendChild(loading);
+    loadingEl.innerHTML = `
+        <div class="spinner" style="
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 5px solid #3498db;
+            margin-bottom: 20px;
+            animation: spin 1s linear infinite;
+        "></div>
+        <div>${message}</div>
+    `;
+    
+    document.body.appendChild(loadingEl);
     
     // Add spinner animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    `;
-    document.head.appendChild(style);
+    if (!document.querySelector('#spinner-style')) {
+        const style = document.createElement('style');
+        style.id = 'spinner-style';
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
 
 function hideLoading() {
-    const loading = document.getElementById('simple-loading');
-    if (loading) loading.remove();
+    const loadingEl = document.getElementById('loading-overlay');
+    if (loadingEl) {
+        loadingEl.remove();
+    }
 }
 
 function showNotification(message, type = 'info') {
-    console.log(`Notification [${type}]:`, message);
+    console.log(`💬 Notification [${type}]:`, message);
     
-    // Remove existing
-    document.querySelectorAll('.simple-notification').forEach(n => n.remove());
+    // Remove existing notifications
+    document.querySelectorAll('.notification').forEach(el => el.remove());
     
     // Create notification
     const notification = document.createElement('div');
-    notification.className = `simple-notification`;
+    notification.className = 'notification';
     
-    const colors = {
-        'success': '#2ecc71',
-        'error': '#e74c3c',
-        'warning': '#f39c12',
-        'info': '#3498db'
+    // Set styles based on type
+    const styles = {
+        'success': {
+            background: '#2ecc71',
+            color: 'white',
+            icon: 'check-circle'
+        },
+        'error': {
+            background: '#e74c3c',
+            color: 'white',
+            icon: 'exclamation-circle'
+        },
+        'warning': {
+            background: '#f39c12',
+            color: 'white',
+            icon: 'exclamation-triangle'
+        },
+        'info': {
+            background: '#3498db',
+            color: 'white',
+            icon: 'info-circle'
+        }
     };
+    
+    const style = styles[type] || styles.info;
     
     notification.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
-        background: ${colors[type] || '#3498db'};
-        color: white;
+        background: ${style.background};
+        color: ${style.color};
         padding: 15px 20px;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         z-index: 10000;
-        animation: slideIn 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 300px;
         max-width: 400px;
         font-family: 'Inter', sans-serif;
+        animation: slideIn 0.3s ease;
     `;
     
-    notification.textContent = message;
+    notification.innerHTML = `
+        <i class="fas fa-${style.icon}" style="font-size: 1.2rem;"></i>
+        <span style="flex: 1;">${message}</span>
+        <button onclick="this.parentElement.remove()" style="
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 1.4rem;
+            padding: 0 5px;
+        ">&times;</button>
+    `;
+    
     document.body.appendChild(notification);
     
-    // Auto remove
+    // Auto remove after 5 seconds
     setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
+        if (notification.parentElement) {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }
     }, 5000);
     
-    // Add animations
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(100%);
+    // Add animations if not exists
+    if (!document.querySelector('#notification-animations')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'notification-animations';
+        styleEl.textContent = `
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
             }
-            to {
-                opacity: 1;
-                transform: translateX(0);
+            @keyframes slideOut {
+                from {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
             }
-        }
-        @keyframes slideOut {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-        }
-    `;
-    document.head.appendChild(style);
+        `;
+        document.head.appendChild(styleEl);
+    }
 }
 
 // ================================================
-// EVENT HANDLERS
+// EVENT HANDLERS - FIXED
 // ================================================
 
-function handleLogin() {
-    console.log('handleLogin() called!');
+async function handleLogin() {
+    console.log('🎯 handleLogin() called');
     
-    const email = document.getElementById('email')?.value || '';
-    const password = document.getElementById('password')?.value || '';
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
     
-    console.log('Form values:', { email, password });
-    
-    if (!email || !password) {
-        showNotification('Email dan password harus diisi', 'warning');
+    if (!emailInput || !passwordInput) {
+        console.error('Email or password input not found');
+        showNotification('Form tidak lengkap', 'error');
         return;
     }
     
-    login(email, password);
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    
+    console.log('Form values:', { email, password });
+    
+    // Validation
+    if (!email) {
+        showNotification('Email harus diisi', 'warning');
+        emailInput.focus();
+        return;
+    }
+    
+    if (!password) {
+        showNotification('Password harus diisi', 'warning');
+        passwordInput.focus();
+        return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showNotification('Format email tidak valid', 'warning');
+        emailInput.focus();
+        return;
+    }
+    
+    // Attempt login
+    await login(email, password);
 }
 
 function setupEventListeners() {
-    console.log('Setting up event listeners...');
+    console.log('🔧 Setting up event listeners...');
     
-    // Login button
+    // Login button - FIXED: Use proper event listener
     const loginBtn = document.getElementById('login-btn');
     if (loginBtn) {
-        console.log('Found login button, adding click listener');
+        console.log('✅ Found login button');
         loginBtn.addEventListener('click', handleLogin);
     } else {
-        console.error('Login button NOT FOUND!');
+        console.error('❌ Login button not found!');
     }
     
     // Logout button
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            if (confirm('Keluar dari sistem?')) {
-                localStorage.clear();
-                window.location.reload();
-            }
-        });
+        logoutBtn.addEventListener('click', logout);
     }
     
-    // Navigation
-    document.querySelectorAll('.nav-item').forEach(item => {
+    // Navigation items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
         item.addEventListener('click', function() {
-            const page = this.dataset.page;
-            console.log('Navigating to:', page);
+            const page = this.getAttribute('data-page');
+            console.log('Navigating to page:', page);
+            // Navigation logic will be implemented later
         });
     });
     
-    // Test user buttons
-    document.querySelectorAll('.btn-test-user').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const email = this.dataset.email;
-            const password = this.dataset.password;
+    // Test user buttons (from debug section)
+    const testButtons = document.querySelectorAll('.btn-test-user');
+    testButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const email = this.getAttribute('data-email');
+            const password = this.getAttribute('data-password');
             
-            document.getElementById('email').value = email;
-            document.getElementById('password').value = password;
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
             
-            console.log('Auto-filled test user:', email);
+            if (emailInput) emailInput.value = email;
+            if (passwordInput) passwordInput.value = password;
+            
+            console.log(`✅ Auto-filled: ${email}`);
+            showNotification(`Form diisi untuk: ${email}`, 'info');
         });
     });
+    
+    console.log('✅ Event listeners setup complete');
 }
 
 // ================================================
-// INITIALIZATION
+// INITIALIZATION - FIXED
 // ================================================
 
-function initializeApp() {
-    console.log('🚀 Initializing app...');
+async function initializeApp() {
+    console.log('🚀 Initializing Youzi Corp Inventory System...');
     
     // Check if user is already logged in
     const storedToken = localStorage.getItem('youzi_token');
@@ -338,14 +485,29 @@ function initializeApp() {
         try {
             authToken = storedToken;
             currentUser = JSON.parse(storedUser);
-            console.log('User found:', currentUser);
-            switchToDashboard();
+            
+            console.log('✅ Found stored user:', currentUser.email);
+            
+            // Validate token with API
+            const isValid = await validateToken();
+            
+            if (isValid) {
+                console.log('✅ Token is valid');
+                switchToDashboard();
+                initializeDashboard();
+            } else {
+                console.log('❌ Token is invalid or expired');
+                localStorage.clear();
+                switchToLogin();
+            }
+            
         } catch (error) {
-            console.error('Error restoring user:', error);
+            console.error('❌ Error restoring session:', error);
+            localStorage.clear();
             switchToLogin();
         }
     } else {
-        console.log('No stored user, showing login');
+        console.log('ℹ️ No stored session found');
         switchToLogin();
     }
     
@@ -353,36 +515,114 @@ function initializeApp() {
     setupEventListeners();
     
     // Test API connection
-    testAPIConnection();
+    await testAPIConnection();
+}
+
+async function validateToken() {
+    if (!authToken) return false;
+    
+    try {
+        const result = await apiRequest('validate', { token: authToken });
+        return result?.success === true;
+    } catch (error) {
+        console.error('Token validation error:', error);
+        return false;
+    }
 }
 
 async function testAPIConnection() {
-    console.log('Testing API connection...');
+    console.log('🌐 Testing API connection...');
+    
     try {
         const result = await apiRequest('test');
-        console.log('API test result:', result);
+        console.log('API Test Result:', result);
         
         if (result && result.success) {
-            showNotification('API terhubung', 'success');
+            showNotification('✅ API terhubung dengan baik', 'success', 3000);
+            return true;
         } else {
-            showNotification('API tidak merespon', 'warning');
+            showNotification('⚠️ API tidak merespon dengan benar', 'warning', 5000);
+            return false;
         }
     } catch (error) {
-        console.error('API test failed:', error);
+        console.error('❌ API test failed:', error);
+        showNotification('❌ Tidak dapat terhubung ke server', 'error', 5000);
+        return false;
+    }
+}
+
+function initializeDashboard() {
+    console.log('📊 Initializing dashboard...');
+    
+    // Update user info
+    updateUserInfo();
+    
+    // Load dashboard data
+    updateDashboardStats();
+    loadRecentActivity();
+}
+
+function updateDashboardStats() {
+    // Placeholder - will be implemented with real data
+    console.log('Updating dashboard stats...');
+    
+    const stats = {
+        totalProducts: 156,
+        todaySales: 'Rp 12.450.000',
+        lowStock: 8,
+        expiringSoon: 15
+    };
+    
+    const totalProductsEl = document.getElementById('total-products');
+    const totalSalesEl = document.getElementById('total-sales');
+    const lowStockEl = document.getElementById('low-stock');
+    const expiringSoonEl = document.getElementById('expiring-soon');
+    
+    if (totalProductsEl) totalProductsEl.textContent = stats.totalProducts;
+    if (totalSalesEl) totalSalesEl.textContent = stats.todaySales;
+    if (lowStockEl) lowStockEl.textContent = stats.lowStock;
+    if (expiringSoonEl) expiringSoonEl.textContent = stats.expiringSoon;
+}
+
+function loadRecentActivity() {
+    console.log('Loading recent activity...');
+    
+    const activities = [
+        { icon: 'fa-box', text: 'Produk "Nasi Goreng Spesial" ditambahkan', time: '2 jam lalu' },
+        { icon: 'fa-shopping-cart', text: 'Transaksi penjualan #TRX-001 berhasil', time: '4 jam lalu' },
+        { icon: 'fa-exclamation-triangle', text: 'Stok "Mie Instan" mencapai batas minimum', time: '1 hari lalu' },
+        { icon: 'fa-user', text: 'User baru "John Doe" didaftarkan', time: '2 hari lalu' }
+    ];
+    
+    const activityList = document.getElementById('recent-activity');
+    if (activityList) {
+        activityList.innerHTML = activities.map(activity => `
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="fas ${activity.icon}"></i>
+                </div>
+                <div class="activity-content">
+                    <p>${activity.text}</p>
+                    <span class="activity-time">${activity.time}</span>
+                </div>
+            </div>
+        `).join('');
     }
 }
 
 // ================================================
-// START APP
+// START APPLICATION
 // ================================================
 
-// Wait for DOM to load
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ DOM fully loaded');
+// Wait for DOM to be fully loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    // DOM already loaded
     initializeApp();
-});
+}
 
-// Make functions available globally
-window.login = login;
+// Make functions available globally for HTML event handlers
 window.handleLogin = handleLogin;
+window.logout = logout;
 window.testAPIConnection = testAPIConnection;
