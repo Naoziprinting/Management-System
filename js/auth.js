@@ -1,4 +1,4 @@
-// File: js/auth.js - FIX CIRCULAR REFERENCE
+// File: js/auth.js - UPDATE LOGIN FUNCTION ERROR HANDLING
 console.log('🚀 auth.js loaded successfully!');
 
 // ================================================
@@ -56,13 +56,13 @@ async function apiRequest(action, data = {}) {
         console.error('❌ API Request failed:', error);
         return {
             success: false,
-            error: error.message || 'Network error'
+            error: 'Network error: ' + error.message
         };
     }
 }
 
 // ================================================
-// LOGIN FUNCTION - FIXED (NO handleLogin INSIDE)
+// LOGIN FUNCTION - UPDATED ERROR HANDLING
 // ================================================
 
 async function login(email, password) {
@@ -101,8 +101,19 @@ async function login(email, password) {
             return { success: true };
             
         } else {
-            // FIX: Jangan panggil handleLogin di sini!
-            const errorMsg = result?.error || 'Login gagal. Periksa email dan password.';
+            // FIXED: Handle API error properly
+            let errorMsg = 'Login gagal. Periksa email dan password.';
+            
+            if (result && result.error) {
+                // Check if error is from Google Apps Script
+                if (result.error.includes('ReferenceError')) {
+                    errorMsg = 'Server error. Silakan coba lagi atau hubungi administrator.';
+                    console.error('Server script error:', result.error);
+                } else {
+                    errorMsg = result.error;
+                }
+            }
+            
             console.error('❌ Login failed:', errorMsg);
             showNotification(errorMsg, 'error');
             
@@ -127,7 +138,61 @@ async function login(email, password) {
 }
 
 // ================================================
-// HANDLE LOGIN FORM SUBMISSION - SEPARATE FUNCTION
+// FALLBACK LOGIN FUNCTION (DIRECT API CALL)
+// ================================================
+
+async function fallbackLogin(email, password) {
+    console.log('🔄 Using fallback login for:', email);
+    
+    try {
+        const url = `${API_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+        
+        const response = await fetch(url);
+        const text = await response.text();
+        
+        console.log('Fallback response text:', text);
+        
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            return {
+                success: false,
+                error: 'Invalid server response'
+            };
+        }
+        
+        if (data && data.success) {
+            localStorage.setItem('youzi_token', data.token);
+            localStorage.setItem('youzi_user', JSON.stringify(data.user));
+            
+            // Switch to dashboard
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard-screen').style.display = 'block';
+            
+            // Update user info
+            document.getElementById('user-name').textContent = data.user.full_name;
+            document.getElementById('user-role').textContent = data.user.role;
+            
+            showNotification(`Selamat datang, ${data.user.full_name}!`, 'success');
+            
+            return { success: true };
+        } else {
+            const errorMsg = data?.error || 'Login gagal';
+            showNotification(errorMsg, 'error');
+            return { success: false, error: errorMsg };
+        }
+        
+    } catch (error) {
+        console.error('Fallback login error:', error);
+        showNotification('Koneksi error. Coba refresh halaman.', 'error');
+        return { success: false, error: error.message };
+    }
+}
+
+// ================================================
+// HANDLE LOGIN FORM SUBMISSION - WITH FALLBACK
 // ================================================
 
 async function handleLoginForm() {
@@ -137,7 +202,6 @@ async function handleLoginForm() {
     const passwordInput = document.getElementById('password');
     
     if (!emailInput || !passwordInput) {
-        console.error('Email or password input not found');
         showNotification('Form tidak lengkap', 'error');
         return;
     }
@@ -168,12 +232,18 @@ async function handleLoginForm() {
         return;
     }
     
-    // Call the login function
-    await login(email, password);
+    // Try main login function first
+    const result = await login(email, password);
+    
+    // If failed due to server error, try fallback
+    if (!result.success && result.error && result.error.includes('Server error')) {
+        console.log('Trying fallback login...');
+        await fallbackLogin(email, password);
+    }
 }
 
 // ================================================
-// UI FUNCTIONS
+// UI FUNCTIONS (Tetap sama)
 // ================================================
 
 function switchToLogin() {
@@ -184,10 +254,12 @@ function switchToLogin() {
     
     if (loginScreen) {
         loginScreen.classList.add('active');
+        loginScreen.style.display = 'block';
     }
     
     if (dashboardScreen) {
         dashboardScreen.classList.remove('active');
+        dashboardScreen.style.display = 'none';
     }
 }
 
@@ -199,10 +271,12 @@ function switchToDashboard() {
     
     if (loginScreen) {
         loginScreen.classList.remove('active');
+        loginScreen.style.display = 'none';
     }
     
     if (dashboardScreen) {
         dashboardScreen.classList.add('active');
+        dashboardScreen.style.display = 'block';
     }
     
     // Update user info
@@ -275,19 +349,6 @@ function showLoading(message) {
     `;
     
     document.body.appendChild(loadingEl);
-    
-    // Add spinner animation
-    if (!document.querySelector('#spinner-style')) {
-        const style = document.createElement('style');
-        style.id = 'spinner-style';
-        style.textContent = `
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
 }
 
 function hideLoading() {
@@ -374,56 +435,23 @@ function showNotification(message, type = 'info') {
             setTimeout(() => notification.remove(), 300);
         }
     }, 5000);
-    
-    // Add animations if not exists
-    if (!document.querySelector('#notification-animations')) {
-        const styleEl = document.createElement('style');
-        styleEl.id = 'notification-animations';
-        styleEl.textContent = `
-            @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateX(100%);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-            }
-            @keyframes slideOut {
-                from {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-                to {
-                    opacity: 0;
-                    transform: translateX(100%);
-                }
-            }
-        `;
-        document.head.appendChild(styleEl);
-    }
 }
 
 // ================================================
-// EVENT HANDLERS - FIXED
+// EVENT HANDLERS
 // ================================================
 
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners...');
     
-    // Login button - Use handleLoginForm (not handleLogin)
+    // Login button
     const loginBtn = document.getElementById('login-btn');
     if (loginBtn) {
         console.log('✅ Found login button');
         // Remove existing listeners first
-        loginBtn.replaceWith(loginBtn.cloneNode(true));
-        const newLoginBtn = document.getElementById('login-btn');
-        
-        newLoginBtn.addEventListener('click', handleLoginForm);
+        loginBtn.removeEventListener('click', handleLoginForm);
+        loginBtn.addEventListener('click', handleLoginForm);
         console.log('✅ Added click listener to login button');
-    } else {
-        console.error('❌ Login button not found!');
     }
     
     // Logout button
@@ -438,22 +466,12 @@ function setupEventListeners() {
         });
     }
     
-    // Navigation items
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const page = this.getAttribute('data-page');
-            console.log('Navigating to page:', page);
-            // Navigation logic will be implemented later
-        });
-    });
-    
     // Test user buttons
     const testButtons = document.querySelectorAll('.btn-test-user');
     testButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const email = this.getAttribute('data-email');
-            const password = this.getAttribute('data-password');
+            const email = this.dataset.email;
+            const password = this.dataset.password;
             
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
@@ -476,15 +494,88 @@ function setupEventListeners() {
         });
     }
     
+    // Navigation items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const page = this.getAttribute('data-page');
+            console.log('Navigating to page:', page);
+            
+            // Remove active class from all
+            navItems.forEach(nav => nav.classList.remove('active'));
+            // Add active class to clicked
+            this.classList.add('active');
+            
+            // Update page title
+            const pageTitles = {
+                'dashboard': 'Dashboard',
+                'products': 'Manajemen Produk',
+                'inventory': 'Inventory',
+                'sales': 'Penjualan',
+                'reports': 'Laporan',
+                'users': 'Manajemen User',
+                'settings': 'Pengaturan'
+            };
+            
+            document.getElementById('page-title').textContent = pageTitles[page] || page;
+            
+            // Show selected page
+            document.querySelectorAll('.page').forEach(pageEl => {
+                pageEl.classList.remove('active');
+            });
+            
+            const targetPage = document.getElementById(`page-${page}`);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+            
+            // Load page content if needed
+            if (page === 'products' && typeof loadProductsPage === 'function') {
+                loadProductsPage();
+            }
+        });
+    });
+    
+    // Sidebar toggle
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+        });
+    }
+    
+    // Dark mode toggle
+    const darkModeSwitch = document.getElementById('dark-mode-switch');
+    if (darkModeSwitch) {
+        darkModeSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                document.body.removeAttribute('data-theme');
+                localStorage.setItem('darkMode', 'false');
+            }
+        });
+    }
+    
     console.log('✅ Event listeners setup complete');
 }
 
 // ================================================
-// INITIALIZATION - FIXED
+// INITIALIZATION
 // ================================================
 
 function initializeApp() {
     console.log('🚀 Initializing Youzi Corp Inventory System...');
+    
+    // Check dark mode preference
+    const darkMode = localStorage.getItem('darkMode') === 'true';
+    if (darkMode) {
+        document.body.setAttribute('data-theme', 'dark');
+        const darkModeSwitch = document.getElementById('dark-mode-switch');
+        if (darkModeSwitch) darkModeSwitch.checked = true;
+    }
     
     // Check if user is already logged in
     const storedToken = localStorage.getItem('youzi_token');
@@ -538,6 +629,10 @@ async function testAPIConnection() {
     }
 }
 
+// ================================================
+// DASHBOARD FUNCTIONS
+// ================================================
+
 function initializeDashboard() {
     console.log('📊 Initializing dashboard...');
     
@@ -550,9 +645,7 @@ function initializeDashboard() {
 }
 
 function updateDashboardStats() {
-    // Placeholder - will be implemented with real data
-    console.log('Updating dashboard stats...');
-    
+    // Mock data for now
     const stats = {
         totalProducts: 156,
         todaySales: 'Rp 12.450.000',
@@ -572,8 +665,6 @@ function updateDashboardStats() {
 }
 
 function loadRecentActivity() {
-    console.log('Loading recent activity...');
-    
     const activities = [
         { icon: 'fa-box', text: 'Produk "Nasi Goreng Spesial" ditambahkan', time: '2 jam lalu' },
         { icon: 'fa-shopping-cart', text: 'Transaksi penjualan #TRX-001 berhasil', time: '4 jam lalu' },
@@ -614,18 +705,14 @@ if (document.readyState === 'loading') {
 // ================================================
 
 // Make functions available globally
-window.YouziAuth = {
-    login: login,
-    handleLoginForm: handleLoginForm,
-    logout: logout,
-    testAPIConnection: testAPIConnection,
-    switchToDashboard: switchToDashboard,
-    switchToLogin: switchToLogin
+window.login = login;
+window.handleLoginForm = handleLoginForm;
+window.fallbackLogin = fallbackLogin;
+window.logout = function() {
+    if (confirm('Keluar dari sistem?')) {
+        localStorage.clear();
+        window.location.reload();
+    }
 };
 
-// Alias for backward compatibility
-window.login = login;
-window.handleLogin = handleLoginForm; // Alias untuk handleLoginForm
-window.logout = logout;
-
-console.log('✅ Auth module loaded and functions exported to window');
+console.log('✅ Auth module loaded and ready!');
