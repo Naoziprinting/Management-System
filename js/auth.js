@@ -1,4 +1,4 @@
-// File: js/auth.js - FIXED VERSION
+// File: js/auth.js - FIX CIRCULAR REFERENCE
 console.log('🚀 auth.js loaded successfully!');
 
 // ================================================
@@ -12,7 +12,7 @@ let currentUser = null;
 let authToken = localStorage.getItem('youzi_token');
 
 // ================================================
-// API FUNCTIONS - FIXED
+// API FUNCTIONS
 // ================================================
 
 async function apiRequest(action, data = {}) {
@@ -62,7 +62,7 @@ async function apiRequest(action, data = {}) {
 }
 
 // ================================================
-// AUTHENTICATION FUNCTIONS - FIXED
+// LOGIN FUNCTION - FIXED (NO handleLogin INSIDE)
 // ================================================
 
 async function login(email, password) {
@@ -101,6 +101,7 @@ async function login(email, password) {
             return { success: true };
             
         } else {
+            // FIX: Jangan panggil handleLogin di sini!
             const errorMsg = result?.error || 'Login gagal. Periksa email dan password.';
             console.error('❌ Login failed:', errorMsg);
             showNotification(errorMsg, 'error');
@@ -125,25 +126,54 @@ async function login(email, password) {
     }
 }
 
-function logout() {
-    if (confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
-        console.log('👋 Logging out user:', currentUser?.email);
-        
-        // Clear storage
-        localStorage.removeItem('youzi_token');
-        localStorage.removeItem('youzi_user');
-        
-        // Clear state
-        authToken = null;
-        currentUser = null;
-        
-        // Reload page
-        window.location.reload();
+// ================================================
+// HANDLE LOGIN FORM SUBMISSION - SEPARATE FUNCTION
+// ================================================
+
+async function handleLoginForm() {
+    console.log('🎯 handleLoginForm() called');
+    
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    
+    if (!emailInput || !passwordInput) {
+        console.error('Email or password input not found');
+        showNotification('Form tidak lengkap', 'error');
+        return;
     }
+    
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    
+    console.log('Form values:', { email, password });
+    
+    // Validation
+    if (!email) {
+        showNotification('Email harus diisi', 'warning');
+        emailInput.focus();
+        return;
+    }
+    
+    if (!password) {
+        showNotification('Password harus diisi', 'warning');
+        passwordInput.focus();
+        return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showNotification('Format email tidak valid', 'warning');
+        emailInput.focus();
+        return;
+    }
+    
+    // Call the login function
+    await login(email, password);
 }
 
 // ================================================
-// UI FUNCTIONS - FIXED
+// UI FUNCTIONS
 // ================================================
 
 function switchToLogin() {
@@ -379,56 +409,19 @@ function showNotification(message, type = 'info') {
 // EVENT HANDLERS - FIXED
 // ================================================
 
-async function handleLogin() {
-    console.log('🎯 handleLogin() called');
-    
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    
-    if (!emailInput || !passwordInput) {
-        console.error('Email or password input not found');
-        showNotification('Form tidak lengkap', 'error');
-        return;
-    }
-    
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-    
-    console.log('Form values:', { email, password });
-    
-    // Validation
-    if (!email) {
-        showNotification('Email harus diisi', 'warning');
-        emailInput.focus();
-        return;
-    }
-    
-    if (!password) {
-        showNotification('Password harus diisi', 'warning');
-        passwordInput.focus();
-        return;
-    }
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showNotification('Format email tidak valid', 'warning');
-        emailInput.focus();
-        return;
-    }
-    
-    // Attempt login
-    await login(email, password);
-}
-
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners...');
     
-    // Login button - FIXED: Use proper event listener
+    // Login button - Use handleLoginForm (not handleLogin)
     const loginBtn = document.getElementById('login-btn');
     if (loginBtn) {
         console.log('✅ Found login button');
-        loginBtn.addEventListener('click', handleLogin);
+        // Remove existing listeners first
+        loginBtn.replaceWith(loginBtn.cloneNode(true));
+        const newLoginBtn = document.getElementById('login-btn');
+        
+        newLoginBtn.addEventListener('click', handleLoginForm);
+        console.log('✅ Added click listener to login button');
     } else {
         console.error('❌ Login button not found!');
     }
@@ -436,7 +429,13 @@ function setupEventListeners() {
     // Logout button
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', logout);
+        logoutBtn.addEventListener('click', function() {
+            if (confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
+                localStorage.removeItem('youzi_token');
+                localStorage.removeItem('youzi_user');
+                window.location.reload();
+            }
+        });
     }
     
     // Navigation items
@@ -449,7 +448,7 @@ function setupEventListeners() {
         });
     });
     
-    // Test user buttons (from debug section)
+    // Test user buttons
     const testButtons = document.querySelectorAll('.btn-test-user');
     testButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -467,6 +466,16 @@ function setupEventListeners() {
         });
     });
     
+    // Enter key on password field
+    const passwordInput = document.getElementById('password');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleLoginForm();
+            }
+        });
+    }
+    
     console.log('✅ Event listeners setup complete');
 }
 
@@ -474,7 +483,7 @@ function setupEventListeners() {
 // INITIALIZATION - FIXED
 // ================================================
 
-async function initializeApp() {
+function initializeApp() {
     console.log('🚀 Initializing Youzi Corp Inventory System...');
     
     // Check if user is already logged in
@@ -488,18 +497,8 @@ async function initializeApp() {
             
             console.log('✅ Found stored user:', currentUser.email);
             
-            // Validate token with API
-            const isValid = await validateToken();
-            
-            if (isValid) {
-                console.log('✅ Token is valid');
-                switchToDashboard();
-                initializeDashboard();
-            } else {
-                console.log('❌ Token is invalid or expired');
-                localStorage.clear();
-                switchToLogin();
-            }
+            // Show dashboard
+            switchToDashboard();
             
         } catch (error) {
             console.error('❌ Error restoring session:', error);
@@ -515,19 +514,7 @@ async function initializeApp() {
     setupEventListeners();
     
     // Test API connection
-    await testAPIConnection();
-}
-
-async function validateToken() {
-    if (!authToken) return false;
-    
-    try {
-        const result = await apiRequest('validate', { token: authToken });
-        return result?.success === true;
-    } catch (error) {
-        console.error('Token validation error:', error);
-        return false;
-    }
+    testAPIConnection();
 }
 
 async function testAPIConnection() {
@@ -622,29 +609,23 @@ if (document.readyState === 'loading') {
     initializeApp();
 }
 
-// Make functions available globally for HTML event handlers
-window.handleLogin = handleLogin;
-window.logout = logout;
-window.testAPIConnection = testAPIConnection;
-
-// Di akhir file auth.js, TAMBAHKAN:
 // ================================================
 // GLOBAL FUNCTION EXPORTS
 // ================================================
 
-// Pastikan semua function penting tersedia secara global
+// Make functions available globally
 window.YouziAuth = {
     login: login,
+    handleLoginForm: handleLoginForm,
     logout: logout,
-    handleLogin: handleLogin,
     testAPIConnection: testAPIConnection,
     switchToDashboard: switchToDashboard,
     switchToLogin: switchToLogin
 };
 
-// Alias untuk backward compatibility
+// Alias for backward compatibility
 window.login = login;
+window.handleLogin = handleLoginForm; // Alias untuk handleLoginForm
 window.logout = logout;
-window.handleLogin = handleLogin;
 
 console.log('✅ Auth module loaded and functions exported to window');
